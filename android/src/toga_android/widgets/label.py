@@ -1,10 +1,12 @@
 from decimal import ROUND_UP
+from math import ceil
 
 from android.os import Build
 from android.text import Layout
 from android.util import TypedValue
 from android.view import Gravity, View
 from android.widget import TextView
+from travertino.constants import NORMAL, PRE_WRAP
 from travertino.size import at_least
 
 from toga.constants import JUSTIFY
@@ -59,7 +61,33 @@ class Label(TextViewWidget):
     def set_text(self, value):
         self.native.setText(value)
 
+    @property
+    def _wraps(self):
+        return self.interface.style.white_space in {NORMAL, PRE_WRAP}
+
     def rehint(self):
+        if self._wraps:
+            # When wrapping, the minimum width is the widest unbreakable token. Android
+            # can't break within a word, so measure each whitespace-delimited token with
+            # the TextView's own paint and take the widest. (A bounded AT_MOST measure
+            # can't be used for this: AOSP clamps a 0-width AT_MOST spec to 0, not to
+            # the longest word.) The real height is recomputed for the assigned width
+            # via measure_text_height().
+            paint = self.native.getPaint()
+            words = str(self.interface.text).split()
+            min_width = max((paint.measureText(word) for word in words), default=0)
+            self.interface.intrinsic.width = self.scale_out(
+                at_least(ceil(min_width)), ROUND_UP
+            )
+            # Fallback single-line height, used only if no width is ever assigned.
+            self.native.measure(
+                View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED
+            )
+            self.interface.intrinsic.height = self.scale_out(
+                self.native.getMeasuredHeight(), ROUND_UP
+            )
+            return
+
         # Ask the Android TextView first for its minimum possible height.
         # This is the height with word-wrapping disabled.
         self.native.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
@@ -73,6 +101,26 @@ class Label(TextViewWidget):
         self.interface.intrinsic.width = self.scale_out(
             at_least(self.native.getMeasuredWidth()), ROUND_UP
         )
+
+    def measure_text_width(self):
+        # Max-content (single-line) width: measure with an unbounded width spec.
+        if not self._wraps:
+            return None
+        self.native.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        return self.scale_out(self.native.getMeasuredWidth(), ROUND_UP)
+
+    def measure_text_height(self, width):
+        # Height-for-width: measure the wrapped height of the text within the assigned
+        # width. The TextView wraps multi-line by default, so a bounded width spec is
+        # all that's needed.
+        if not self._wraps:
+            return None
+        native_width = self.scale_in(width)
+        self.native.measure(
+            View.MeasureSpec.makeMeasureSpec(native_width, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.UNSPECIFIED,
+        )
+        return self.scale_out(self.native.getMeasuredHeight(), ROUND_UP)
 
     def set_text_align(self, value):
         self.set_textview_alignment(value, Gravity.TOP)

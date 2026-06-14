@@ -84,6 +84,19 @@ class Widget:
     def set_text_align(self, alignment):
         pass
 
+    def set_white_space(self, white_space):
+        # By default, white-space handling can't be changed; reflowable-text widgets
+        # (e.g. Label) override this.
+        pass
+
+    def measure_text_width(self):
+        # Only reflowable-text widgets report a max-content width.
+        return None
+
+    def measure_text_height(self, width):
+        # Only reflowable-text widgets compute a height for a given width.
+        return None
+
     def set_hidden(self, hidden):
         self.native.setHidden(hidden)
 

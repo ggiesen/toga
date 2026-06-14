@@ -17,6 +17,8 @@ from travertino.constants import (  # noqa: F401
     NONE,
     NORMAL,
     OBLIQUE,
+    PRE,
+    PRE_WRAP,
     RIGHT,
     ROW,
     RTL,
@@ -71,6 +73,8 @@ class PackLogic(BaseStyle):
                 self._applicator.set_text_align(
                     RIGHT if self.text_direction == RTL else LEFT
                 )
+        if "white_space" in names:
+            self._applicator.set_white_space(self.white_space)
         if "color" in names:
             self._applicator.set_color(self.color)
         if "background_color" in names:
@@ -198,6 +202,12 @@ class PackLogic(BaseStyle):
         if self.text_direction != LTR:
             css.append(f"text-direction: {self.text_direction};")
 
+        # white_space
+        # The reference Pack stylesheet sets `white-space: pre` on every node, so only a
+        # non-default value needs to be emitted.
+        if self.white_space != PRE:
+            css.append(f"white-space: {self.white_space};")
+
         # font-*
         if self.font_family != [SYSTEM]:
             families = [
@@ -283,12 +293,47 @@ class PackLogic(BaseStyle):
                 # self._debug(f"AUTO {available_width=}")
                 min_width = 0
 
+            # CSS `flex: <f> 0 auto` — which is what Pack emits for an auto-width box —
+            # never shrinks below its content (flex-shrink is 0). So a reflowable widget
+            # that the engine offers no main-axis width (alloc_width <= margins: a
+            # non-flexible child being sized to content on a row's main axis) takes its
+            # max-content (single-line) width and does NOT wrap. Wrapping happens only
+            # against a width handed down from the cross axis (a column's stretch) or an
+            # explicit width. min_width stays the min-content floor.
+            if (
+                self.white_space in {NORMAL, PRE_WRAP}
+                and not node.children
+                and (alloc_width - self.margin_left - self.margin_right) <= 0
+            ):
+                max_width = self._applicator.measure_text_width()
+                if max_width is not None:
+                    available_width = max_width
+
+        # Height-for-width: a node that reflows its content (e.g. a word-wrapping label)
+        # reports a height that depends on the width it is allocated. Now that the width
+        # has been established above, ask the backend to measure the height for exactly
+        # that width. This returns None — leaving the single-pass behavior untouched —
+        # for every widget that isn't reflowable and whenever wrapping is disabled (the
+        # default `white-space: pre`), so non-wrapping layout is byte-identical.
+        measured_height = None
+        if (
+            self.height == NONE
+            and self.white_space in {NORMAL, PRE_WRAP}
+            and not node.children
+        ):
+            measured_height = self._applicator.measure_text_height(available_width)
+
         # Establish available height
         if self.height != NONE:
             # If height is specified, use it.
             available_height = self.height
             min_height = self.height
             # self._debug(f"SPECIFIED HEIGHT {self.height}")
+        elif measured_height is not None:
+            # The backend reflowed the content to the established width and reported the
+            # resulting height; that height *is* the node's height.
+            available_height = measured_height
+            min_height = measured_height
         else:
             available_height = max(
                 0,

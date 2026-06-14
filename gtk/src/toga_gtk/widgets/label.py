@@ -1,3 +1,4 @@
+from travertino.constants import NORMAL, PRE_WRAP
 from travertino.size import at_least
 
 from ..libs import GTK_VERSION, Gtk, gtk_text_align
@@ -11,6 +12,43 @@ class Label(Widget):
             self.native.set_line_wrap(False)
         else:  # pragma: no-cover-if-gtk3
             self.native.set_wrap(False)
+
+    @property
+    def _wraps(self):
+        return self.interface.style.white_space in {NORMAL, PRE_WRAP}
+
+    def set_white_space(self, white_space):
+        wrap = white_space in {NORMAL, PRE_WRAP}
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            self.native.set_line_wrap(wrap)
+        else:  # pragma: no-cover-if-gtk3
+            self.native.set_wrap(wrap)
+
+    def measure_text_width(self):
+        # Max-content (single-line) width: the natural width GTK reports for the label
+        # (the width it would take if it didn't wrap).
+        if not self._wraps:
+            return None
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            _, natural_width = self.native.get_preferred_width()
+            return natural_width
+        else:  # pragma: no-cover-if-gtk3
+            _, natural_size = self.native.get_preferred_size()
+            return natural_size.width
+
+    def measure_text_height(self, width):
+        # Height-for-width: when wrapping is enabled, report the height GTK needs to lay
+        # out the text within the assigned width. Gtk.Label is the canonical
+        # HEIGHT_FOR_WIDTH widget, so this is a native query.
+        if not self._wraps:
+            return None
+        width = int(width)
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            _, natural_height = self.native.get_preferred_height_for_width(width)
+            return natural_height
+        else:  # pragma: no-cover-if-gtk3
+            _, natural, _, _ = self.native.measure(Gtk.Orientation.VERTICAL, width)
+            return natural
 
     def set_text_align(self, value):
         xalign, justify = gtk_text_align(value)

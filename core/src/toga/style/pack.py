@@ -23,6 +23,8 @@ from travertino.constants import (  # noqa: F401
     NONE,
     NORMAL,
     OBLIQUE,
+    PRE,
+    PRE_WRAP,
     RIGHT,
     ROW,
     RTL,
@@ -247,6 +249,31 @@ class Pack(PackLogic):
     **Allowed values:** `"rtl"` or `"ltr"`
 
     **Default value:** `"rtl"`
+    """
+    white_space: str = validated_property(PRE, NORMAL, PRE_WRAP, initial=PRE)
+    """How whitespace and line wrapping are handled for text content.
+
+    **Allowed values:** `"pre"`, `"normal"`, or `"pre-wrap"`
+
+    **Default value:** `"pre"`
+
+    Maps to the CSS `white-space` property. A value of `"pre"` (the default) preserves
+    runs of whitespace and explicit newlines, and does *not* wrap long lines — matching
+    Toga's historical behavior. A value of `"normal"` or `"pre-wrap"` wraps text to the
+    width the widget is allocated by the layout.
+
+    For wrapping to take effect, the widget must be allocated a bounded width: place it
+    in a `"column"` whose width is constrained by an ancestor, or give it an explicit
+    `width` or a `flex` value. A reflowable widget in a `"row"` with neither `flex` nor
+    an explicit `width` will collapse to the width of its longest unbreakable word; give
+    it `flex` or a `width` to control the width it wraps at.
+
+    Whitespace collapsing for `"normal"` is not yet implemented on the native backends,
+    so `"normal"` currently wraps without collapsing runs of whitespace (i.e. it behaves
+    like `"pre-wrap"`).
+
+    Only widgets that render reflowable text (e.g. [`Label`][toga.Label]) honor this
+    property; it has no effect on other widgets.
     """
     font_family: str | list[str] = list_property(
         *SYSTEM_DEFAULT_FONTS, string=True, initial=[SYSTEM]

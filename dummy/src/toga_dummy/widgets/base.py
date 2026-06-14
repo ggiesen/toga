@@ -47,6 +47,17 @@ class Widget(LoggedObject):
     def set_text_align(self, alignment):
         self._action("set text alignment", alignment=alignment)
 
+    def set_white_space(self, white_space):
+        self._action("set white space", white_space=white_space)
+
+    def measure_text_width(self):
+        # Reflowable-text widgets override this; the base test double does not reflow.
+        return None
+
+    def measure_text_height(self, width):
+        # Reflowable-text widgets override this; the base test double does not reflow.
+        return None
+
     def set_hidden(self, hidden):
         self._action("set hidden", hidden=hidden)
 

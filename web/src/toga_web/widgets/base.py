@@ -188,6 +188,18 @@ class Widget(ABC):
     def set_text_align(self, alignment):
         self._reapply_style()
 
+    def set_white_space(self, white_space):
+        # The browser/CSS engine performs wrapping; just re-emit the style.
+        self._reapply_style()
+
+    def measure_text_width(self):
+        # Web does not drive layout through Travertino; the browser reflows natively.
+        return None
+
+    def measure_text_height(self, width):
+        # Web does not drive layout through Travertino; the browser reflows natively.
+        return None
+
     def set_hidden(self, hidden):
         self._reapply_style()
 

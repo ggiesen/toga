@@ -59,6 +59,30 @@ class TogaApplicator:
     def set_text_align(self, alignment: str) -> None:
         self.widget._impl.set_text_align(alignment)
 
+    def set_white_space(self, white_space: str) -> None:
+        self.widget._impl.set_white_space(white_space)
+
+    def measure_text_width(self) -> int | None:
+        """Measure the widget's max-content (single-line) width.
+
+        This is the width the content wants when it is *not* wrapped. The layout uses it
+        as the main-axis basis for a reflowable widget that is being sized to content
+        (so, like CSS ``flex-shrink: 0``, it does not wrap below a single line on the
+        main axis). Returns ``None`` for widgets that don't reflow their content.
+        """
+        return self.widget._impl.measure_text_width()
+
+    def measure_text_height(self, width: float) -> int | None:
+        """Measure the height the widget's content needs at the given width.
+
+        ``width`` may be non-integer (the layout can hand out fractional widths when
+        distributing flexible space), so implementations must accept a float.
+
+        Returns ``None`` for widgets that don't reflow their content, in which case the
+        layout falls back to the widget's static intrinsic height.
+        """
+        return self.widget._impl.measure_text_height(width)
+
     def set_hidden(self, hidden: bool) -> None:
         self.widget._impl.set_hidden(hidden)
         for child in self.widget.children:

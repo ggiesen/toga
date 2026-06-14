@@ -14,6 +14,8 @@ from toga.style.pack import (
     NONE,
     NORMAL,
     PACK,
+    PRE,
+    PRE_WRAP,
     RIGHT,
     ROW,
     RTL,
@@ -398,6 +400,22 @@ from toga.style.pack import (
             Pack(text_direction=LTR),
             "flex-direction: row; flex: 0.0 0 auto;",
             id="text-align-ltr",
+        ),
+        # White space
+        pytest.param(
+            Pack(white_space=NORMAL),
+            "flex-direction: row; flex: 0.0 0 auto; white-space: normal;",
+            id="white-space-normal",
+        ),
+        pytest.param(
+            Pack(white_space=PRE_WRAP),
+            "flex-direction: row; flex: 0.0 0 auto; white-space: pre-wrap;",
+            id="white-space-pre-wrap",
+        ),
+        pytest.param(
+            Pack(white_space=PRE),
+            "flex-direction: row; flex: 0.0 0 auto;",
+            id="white-space-pre",
         ),
         # Font
         pytest.param(

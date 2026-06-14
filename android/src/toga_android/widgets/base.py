@@ -148,6 +148,17 @@ class Widget(ABC, Scalable):
     def set_text_align(self, alignment):  # noqa B027
         pass  # If appropriate, a widget subclass will implement this.
 
+    def set_white_space(self, white_space):  # noqa B027
+        pass  # Reflowable-text widgets (e.g. Label) implement this.
+
+    def measure_text_width(self):
+        # Only reflowable-text widgets report a max-content width.
+        return None
+
+    def measure_text_height(self, width):
+        # Only reflowable-text widgets compute a height for a given width.
+        return None
+
     def set_color(self, color):  # noqa B027
         pass  # If appropriate, a widget subclass will implement this.
 
